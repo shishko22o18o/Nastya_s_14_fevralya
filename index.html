@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Love Story Telegram</title>
+<style>
+    :root {
+        --bg-color: #17212b;
+        --chat-bg: #0e1621;
+        --header-bg: #17212b;
+        --msg-in: #182533;
+        --msg-out: #2b5278;
+        --text-primary: #ffffff;
+        --text-secondary: #7e8c9d;
+        --accent: #6c7883;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI", Helvetica, Arial, sans-serif; }
+    
+    body { 
+        background-color: #000; 
+        color: var(--text-primary); 
+        height: 100vh; 
+        overflow: hidden; 
+        display: flex; 
+        justify-content: center; 
+    }
+
+    .mobile-wrapper {
+        width: 100%;
+        max-width: 480px;
+        height: 100%;
+        background-color: var(--chat-bg);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    /* --- Header --- */
+    .header {
+        height: 56px;
+        background-color: var(--header-bg);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        z-index: 10;
+        transition: all 0.3s ease;
+    }
+
+    .back-icon { font-size: 20px; color: var(--text-secondary); margin-right: 20px; cursor: pointer; }
+    
+    .avatar {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #A0C4FF, #748CAB);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 16px; color: white;
+        margin-right: 12px;
+        text-transform: uppercase;
+    }
+
+    .header-info { display: flex; flex-direction: column; justify-content: center; flex: 1; }
+    .header-name { font-weight: 600; font-size: 16px; line-height: 1.1; }
+    .header-status { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* --- Chat Area --- */
+    .chat-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 10px 20px 10px;
+        display: flex;
+        flex-direction: column;
+        scroll-behavior: smooth;
+        
+        /* Исправленный фон - CSS паттерн вместо картинки */
+        background-color: var(--chat-bg);
+        background-image: radial-gradient(#1d2a3a 1px, transparent 0);
+        background-size: 20px 20px;
+    }
+
+    /* --- Messages --- */
+    .message-row {
+        display: flex;
+        margin-bottom: 6px;
+        width: 100%;
+    }
+    
+    .message-row.received { justify-content: flex-start; }
+    .message-row.sent { justify-content: flex-end; }
+
+    .bubble {
+        max-width: 80%;
+        padding: 8px 12px;
+        border-radius: 12px; /* iOS style radius */
+        font-size: 15px;
+        line-height: 1.4;
+        position: relative;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+        animation: msgAppear 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes msgAppear {
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .bubble.received {
+        background-color: var(--msg-in);
+        border-bottom-left-radius: 4px;
+    }
+
+    .bubble.sent {
+        background-color: var(--msg-out);
+        border-bottom-right-radius: 4px;
+    }
+
+    .msg-time {
+        float: right;
+        font-size: 11px;
+        color: #5d6c7b;
+        margin-top: 6px;
+        margin-left: 8px;
+        pointer-events: none;
+        user-select: none;
+    }
+    .bubble.sent .msg-time { color: #6fb0e9; }
+
+    /* --- Typing Indicator --- */
+    .typing-indicator {
+        display: none; /* Hidden by default */
+        align-items: center;
+        margin-left: 10px;
+        margin-bottom: 10px;
+        background: var(--msg-in);
+        padding: 10px 15px;
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        width: fit-content;
+        animation: fadeIn 0.3s;
+    }
+    .dot {
+        width: 6px; height: 6px;
+        background: #6c7883;
+        border-radius: 50%;
+        margin: 0 2px;
+        animation: typingBounce 1.4s infinite ease-in-out both;
+    }
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typingBounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+
+    /* --- Input Area (Fake) --- */
+    .input-area {
+        background-color: var(--header-bg);
+        padding: 8px 10px;
+        display: flex;
+        align-items: center;
+    }
+    .input-field {
+        flex: 1;
+        background: #0e1621; /* Darker than header */
+        height: 42px;
+        border-radius: 21px;
+        border: 1px solid #000;
+        display: flex;
+        align-items: center;
+        padding-left: 15px;
+        color: var(--text-secondary);
+        font-size: 16px;
+    }
+    .mic-btn {
+        width: 42px; height: 42px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; color: var(--text-secondary);
+        margin-left: 8px;
+    }
+
+    /* --- Overlay Screens --- */
+    .overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: #0e1621;
+        z-index: 100;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        transition: opacity 0.5s;
+    }
+    .btn-start {
+        background: #59a6eb; color: white;
+        padding: 14px 32px;
+        border-radius: 12px;
+        font-size: 18px; font-weight: 600;
+        border: none; cursor: pointer;
+        margin-top: 20px;
+        box-shadow: 0 4px 14px rgba(89, 166, 235, 0.3);
+    }
+    
+    .final-screen {
+        opacity: 0; pointer-events: none;
+        background: black;
+        z-index: 200;
+    }
+    .final-screen.active { opacity: 1; pointer-events: all; }
+    
+    .heart-fall {
+        position: fixed; top: -10vh;
+        font-size: 24px;
+        animation: fall linear forwards;
+        z-index: 300;
+    }
+    @keyframes fall { to { transform: translateY(110vh); } }
+
+</style>
+</head>
+<body>
+
+<audio id="tgSound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+
+<div class="mobile-wrapper">
+    
+    <div class="overlay" id="startScreen">
+        <h1 style="color:white; margin-bottom:10px">Для Насти 💖</h1>
+        <p style="color:#7e8c9d; margin-bottom:30px">Надеюсь тебе понравится</p>
+        <button class="btn-start" onclick="startStory()">Открыть чат</button>
+    </div>
+
+    <div class="header">
+        <div class="back-icon">←</div>
+        <div class="avatar" id="avatarEl">A</div>
+        <div class="header-info">
+            <div class="header-name" id="nameEl">Name</div>
+            <div class="header-status">был(а) недавно</div>
+        </div>
+    </div>
+
+    <div class="chat-container" id="chat"></div>
+
+    <div class="typing-indicator" id="typing">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-field">Скинуться на яблоки...</div>
+        <div class="mic-btn">🎤</div>
+    </div>
+
+    <div class="overlay final-screen" id="finalScreen">
+        <h1 style="color:#ff4757; margin-bottom:15px; text-align:center">Настя...</h1>
+        <h2 style="color:white; font-weight:400; font-size:18px; text-align:center; padding:0 20px" id="finalText"></h2>
+        <button class="btn-start" style="background:#ff4757; margin-top:40px" onclick="rainHearts()">Ответить ❤️</button>
+    </div>
+
+</div>
+
+<script>
+    // --- ДАННЫЕ ИСТОРИИ ---
+    // Формат: Имя, Цвет аватарки, Сообщения
+    const scenario = [
+        {
+            name: "Алина 🌸",
+            color: "#FF9A9E",
+            msgs: [
+                "Настяяя! 💕",
+                "Ты тут?",
+                "Сегодня особенный день.",
+                "Просто хотела напомнить, какая ты классная.",
+                "Ты очень красивая. И добрая.",
+                "Но... это еще не всё 😉"
+            ]
+        },
+        {
+            name: "Макс 😂",
+            color: "#84fab0",
+            msgs: [
+                "Йоу, Настя!",
+                "Подтверждаю слова Алины.",
+                "Ты реально топ.",
+                "С тобой всегда весело и легко.",
+                "И ты не душнила, это важно 😄",
+                "Короче, ты супер. Жди сюрприз."
+            ]
+        },
+        {
+            name: "Артём 📚",
+            color: "#a1c4fd",
+            msgs: [
+                "Привет.",
+                "Знаешь, есть люди, с которыми мир становится ярче.",
+                "Ты такая.",
+                "Искренняя, глубокая, настоящая.",
+                "Береги этот свет в себе.",
+                "Кто-то очень хочет тебе написать..."
+            ]
+        },
+        {
+            name: "Додоев 🤍",
+            color: "#c2e9fb",
+            msgs: [
+                "Думаешь, это всё случайно?",
+                "Все эти сообщения?",
+                "Ты заслуживаешь внимания.",
+                "Ты заслуживаешь любви.",
+                "Самой чистой и настоящей.",
+                "Он уже здесь."
+            ]
+        },
+        {
+            name: "Фембойчик ❤️",
+            color: "#ff6b6b",
+            msgs: [
+                "Привет, Настюшечка...",
+                "Скучала по мне солнышко?",
+                "Да, это всё я.",
+                "Сегодня 14 февраля.",
+                "Я не мог промолчать.",
+                "Ты невероятная.",
+                "Красивая, умная, милая.",
+                "Мне с тобой очень тепло.",
+                "Я хочу сказать главное..."
+            ]
+        }
+    ];
+
+    // --- ЭЛЕМЕНТЫ ---
+    const audio = document.getElementById('tgSound');
+    const chatEl = document.getElementById('chat');
+    const nameEl = document.getElementById('nameEl');
+    const avatarEl = document.getElementById('avatarEl');
+    const typingEl = document.getElementById('typing');
+    const startScreen = document.getElementById('startScreen');
+    const finalScreen = document.getElementById('finalScreen');
+    const finalText = document.getElementById('finalText');
+
+    // --- ФУНКЦИИ ---
+
+    // Функция паузы (async)
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // Старт истории
+    function startStory() {
+        startScreen.style.opacity = '0';
+        setTimeout(() => startScreen.remove(), 500);
+        
+        // Разблокировка аудио для iOS/Android
+        audio.volume = 0.5;
+        audio.play().then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+        }).catch(e => console.log("Audio requires interaction", e));
+
+        // Запуск сценария
+        runScenario();
+    }
+
+    // Главный цикл сценария
+    async function runScenario() {
+        for (let char of scenario) {
+            
+            // 1. Смена персонажа
+            await sleep(500);
+            updateHeader(char.name, char.color);
+            chatEl.innerHTML = ''; // Очистить чат для нового диалога
+            await sleep(800);
+
+            // 2. Отправка сообщений персонажа
+            for (let text of char.msgs) {
+                // Показать "печатает..."
+                typingEl.style.display = 'flex';
+                chatEl.scrollTop = chatEl.scrollHeight;
+                
+                // Время "печати" зависит от длины текста
+                await sleep(500 + text.length * 40);
+                
+                // Скрыть тайпинг и показать сообщение
+                typingEl.style.display = 'none';
+                addMessage(text);
+                
+                // Звук + Вибрация
+                try {
+                    audio.currentTime = 0;
+                    audio.play();
+                    if (navigator.vibrate) navigator.vibrate(30);
+                } catch(e){}
+
+                // Пауза перед следующим сообщением (чтобы успела прочитать)
+                await sleep(1200 + text.length * 30);
+            }
+            
+            // Пауза перед сменой чата
+            await sleep(1500);
+        }
+
+        // Финал
+        showFinal();
+    }
+
+    function updateHeader(name, color) {
+        // Анимация смены имени
+        nameEl.style.opacity = 0;
+        setTimeout(() => {
+            nameEl.innerText = name;
+            avatarEl.innerText = name[0];
+            avatarEl.style.background = color;
+            nameEl.style.opacity = 1;
+        }, 200);
+    }
+
+    function addMessage(text) {
+        const row = document.createElement('div');
+        row.className = 'message-row received';
+        
+        const now = new Date();
+        const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+        row.innerHTML = `
+            <div class="bubble received">
+                ${text}
+                <span class="msg-time">${time}</span>
+            </div>
+        `;
+        
+        chatEl.appendChild(row);
+        chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function showFinal() {
+        finalScreen.classList.add('active');
+        finalText.innerText = "Фембойчик: \nЯ тебя люблю! 💖";
+    }
+
+    function rainHearts() {
+        // Финальная анимация
+        try { audio.play(); } catch(e){}
+        const btn = document.querySelector('.final-screen button');
+        btn.innerText = "С 14 февраля!";
+        btn.style.background = "#fff";
+        btn.style.color = "#ff4757";
+
+        for(let i=0; i<80; i++) {
+            setTimeout(() => {
+                const h = document.createElement('div');
+                h.className = 'heart-fall';
+                h.innerText = ['❤️','💖','💕','🥰'][Math.floor(Math.random()*4)];
+                h.style.left = Math.random() * 100 + 'vw';
+                h.style.animationDuration = (2 + Math.random() * 3) + 's';
+                document.body.appendChild(h);
+            }, i * 150);
+        }
+    }
+</script>
+</body>
+</html>
